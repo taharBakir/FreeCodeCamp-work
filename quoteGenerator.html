@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+  </head>
+  <body>
+    <div class="container text-center">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <h1>Quotes from</h1> <h4 class="text-primary">http://api.forismatic.com/</h4>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <button class="btn btn-success btn-lg"> Next quote</button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <blockquote class="bg-info">
+            <p id="quote">Click the above button to get the quote</p>
+            <footer id="author">Simon said it</footer>
+          </blockquote>
+          <a href="https://twitter.com/share" class="twitter-share-button" data-text="FreeCodeCamp Project - Quote generator - " data-via="bozobadman">Tweet</a>
+          <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+        </div>
+      </div>
+    </div>
+    <style>
+      .row{
+        padding: 10px;
+        margin: 10px;
+      }
+
+      blockquote{
+        padding: 20px ;
+        margin: 20px;
+      }
+    </style>
+
+    <script>
+      $('button').on('click', function () {
+        $.getJSON("http://api.forismatic.com/api/1.0/?method=getQuote&lang=en&format=jsonp&jsonp=?")
+          .done(update)
+          .fail(handleErr);
+      });
+
+      function update(response) {
+      //  $('#response').html(JSON.stringify(response.quoteText));
+      $('#quote').html(JSON.stringify(response.quoteText));
+      $('#author').html(JSON.stringify(response.quoteAuthor));
+      }
+
+      function handleErr(jqxhr, textStatus, err) {
+        console.log("Request Failed: " + textStatus + ", " + err);
+      }
+    </script>
+  </body>
+</html>

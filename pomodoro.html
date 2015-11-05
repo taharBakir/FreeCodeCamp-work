@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="//d3js.org/d3.v3.min.js"></script>
+    <meta name="description" content="Pomodoro Airport style">
+    <meta name="author" content="Tahar bakir">
+  </head>
+  <body>
+    <div class="container text-center">
+
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <h1 class="text-primary">Pomodoro</h1>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+          <button id='StartTimer' class="btn btn-success btn-lg" >START</button>
+          <br/><br/>
+          <div class="row">
+            <div class="col-md-3 col-md-offset-3">
+              <button id='pomoUp' type="button" class="btn btn-primary btn-lg btn-block">+</button>
+            </div>
+            <div class="col-md-3">
+              <button id='pomoDown' type="button" class="btn btn-danger btn-lg btn-block">-</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+          <h1>Pomodoro of <span id="pomo"></span> Minutes</h1>
+          <hr>
+            <div id="timestamp"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="credit">Inspired by <a href="http://blog.pixelbreaker.com/polarclock/">pixelbreaker</a>.</div>
+
+    <script type="text/javascript">
+
+      $(document).ready(function(){
+        // VARIABLE INIT D3
+        var now = new Date;
+        var width = 480,
+            height = 400,
+            radius = Math.min(width, height) / 2.3,
+            spacing = .35;
+
+        var formatSecond = d3.time.format("%S s"),
+            formatMinute = d3.time.format("%M m");
+
+        var color = d3.scale.linear()
+          .range(["hsl(-180,50%,50%)", "hsl(180,50%,50%)"])
+          .interpolate(interpolateHsl);
+
+        var arc = d3.svg.arc()
+                    .startAngle(0)
+                    .endAngle(function(d) { return d.value * 2 * Math.PI; })
+                    .innerRadius(function(d) { return d.index * radius; })
+                    .outerRadius(function(d) { return (d.index + spacing) * radius; });
+
+        var svg = d3.select("#timestamp").append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+        var field = svg.selectAll("g")
+                        .data(fields)
+                        .enter().append("g");
+
+        var tack;
+        // END VARIABLE INIT D3
+
+        //FUNCTION D3
+        function tick() {
+          if(Boolean(tack)){
+            if( (intervalSecond*60) === elapsedSecond ){
+              clearInterval(tack) ;
+              $('#timestamp').hide();
+              console.log(' xxx elapsedSecond:'+elapsedSecond+' intervalSecond:'+intervalSecond);
+              elapsedSecond = 0 ;
+              audio.play();
+              return;
+            }
+          }
+
+          elapsedSecond+=1000;
+
+          field = field.each(function(d) { this._value = d.value; })
+                    .data(fields)
+                    .each(function(d) { d.previousValue = this._value; });
+
+          field.select("path")
+            .transition()
+            .ease("elastic")
+            .attrTween("d", arcTween)
+            .style("fill", function(d) { return color(d.value); });
+
+          field.select("text")
+            .attr("dy", function(d) { return d.value < .5 ? "-.5em" : "1em"; })
+            .text(function(d) { return d.text; })
+            .transition()
+            .ease("elastic")
+            .attr("transform", function(d) {
+              return "rotate(" + 360 * d.value + ")"
+              + "translate(0," + -(d.index + spacing / 2) * radius + ")"
+              + "rotate(" + (d.value < .5 ? -90 : 90) + ")"
+            });
+
+            tack = setTimeout(tick, 1000);
+        }
+
+        function arcTween(d) {
+          var i = d3.interpolateNumber(d.previousValue, d.value);
+          return function(t) { d.value = i(t); return arc(d); };
+        }
+
+        // LES DONNEES SUR L'HORLOGE
+        function fields() {
+          now.setSeconds(now.getSeconds()-1);;
+          return [
+            {index: .7, text: formatSecond(now), value: now.getSeconds() / 60},
+            {index: .2, text: formatMinute(now), value: now.getMinutes() / 60},
+          ];
+        }
+
+        // Avoid shortest-path interpolation.
+        function interpolateHsl(a, b) {
+          var i = d3.interpolateString(a, b);
+          return function(t) {
+            return d3.hsl(i(t));
+          };
+        }
+        //END FUNCTION D3
+
+        var intervalSecond = 1000;
+        var elapsedSecond = 0 ;
+        var audio = new Audio('http://dl.glujar.com/1177-9947-0/the-ride-of-the-valkyries-by-richard-wagner.mp3');
+
+        $('#pomo').html('<span class="text-primary"> '+intervalSecond/1000+' </span>');
+
+        function updateAffichagePomo(){
+          $('#pomo').html('<span class="text-primary"> '+intervalSecond/1000+' </span>');
+        }
+
+
+        $('html').on('click', function () {
+          audio.pause();
+          audio.currentTime = 0;
+        });
+
+        $('#StartTimer').on('click', function () {
+            clearInterval(tack) ;
+            $('#timestamp').hide();
+              console.log('elapsedSecond:'+elapsedSecond+' intervalSecond:'+intervalSecond);
+          elapsedSecond = 0 ;
+
+          now.setSeconds(0);
+          now.setMinutes(intervalSecond/1000);
+
+          field.append("path");
+          field.append("text");
+          d3.transition().duration(0).each(tick);
+          d3.select(self.frameElement).style("height", height + "px");
+
+          $("#timestamp").show();
+
+        });
+
+        $('#pomoUp').on('click', function () {
+            clearInterval(tack) ;
+            $('#timestamp').hide();
+              console.log('elapsedSecond:'+elapsedSecond+' intervalSecond:'+intervalSecond);
+          elapsedSecond = 0 ;
+
+          if(intervalSecond < 59000)
+            intervalSecond+=1000;
+
+            updateAffichagePomo();
+        });
+
+        $('#pomoDown').on('click', function () {
+            clearInterval(tack) ;
+            $('#timestamp').hide();
+              console.log('elapsedSecond:'+elapsedSecond+' intervalSecond:'+intervalSecond);
+            elapsedSecond = 0 ;
+
+          if(intervalSecond > 1000)
+              intervalSecond-=1000;
+
+          updateAffichagePomo();
+        });
+
+      });
+
+    </script>
+
+    <style>
+        body {
+          background: #222;
+          font: 20px sans-serif;
+        }
+
+        text {
+          text-anchor: middle;
+        }
+
+        #credit {
+          position: absolute;
+          right: 4px;
+          bottom: 4px;
+          color: #000;
+        }
+
+        #credit a {
+          color: #000;
+          font-weight: bold;
+        }
+    </style>
+
+  </body>
+</html>
